@@ -9,6 +9,7 @@ Then in the root folder run: <br>
 ```bash
 uv sync
 ```
+This command will sync the dependencies needed for running the script.
 
 ## Usage
 
@@ -26,3 +27,23 @@ If you wish to retrain the model again after data collection, running the same c
 ```bash
 uv run python main.py
 ```
+## Outputs
+
+| File | Description |
+|------|-------------|
+| `Data/Assignment_1/dataset/ngram_dataset/` | Training, validation, and test `.txt` files |
+| `results-self.json` | Predictions and perplexity on self-created test set |
+| `results-provided.json` | Predictions and perplexity on provided test set |
+
+## Hyperparameters
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| n | 3, 5, 7 | Best selected via validation perplexity |
+| α (smoothing) | 0.01 | Higher values (0.1, 1.0) caused over-smoothing |
+| min_freq | 3 | Minimum token frequency for vocabulary inclusion |
+| Training set sizes | 15k / 25k / 35k | T1, T2, T3 respectively |
+
+
+## Adding Your Own Test File
+If you would like to test your own unique test file, simply add a new file to the root of this project with the name `my-test.txt` and it will run automatically after the provided file and the self-created test files run.
