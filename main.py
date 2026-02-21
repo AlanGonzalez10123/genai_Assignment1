@@ -84,36 +84,6 @@ def clone_repo(clone_url, dest_dir):
         print(f"  Error: {e}")
         return False
 
-
-def find_java_files(repo_path):
-    """
-    Find all .java files in a repository.
-    Excludes test files and common non-source directories.
-    """
-    java_files = []
-    exclude_patterns = ["test", "tests", "example", "examples", "sample", "demo", "generated"]
-
-    for root, dirs, files in os.walk(repo_path):
-        root_lower = root.lower()
-        if any(pattern in root_lower for pattern in exclude_patterns):
-            continue
-
-        for file in files:
-            if file.endswith(".java"):
-                java_files.append(os.path.join(root, file))
-
-    return java_files
-
-
-def select_java_files(java_files, max_files):
-    """
-    Randomly select up to max_files from the list.
-    """
-    if len(java_files) <= max_files:
-        return java_files
-    return random.sample(java_files, max_files)
-
-
 def find_java_files(repo_path):
     """
     Find all .java files in a repository.
@@ -235,8 +205,6 @@ def count_tokens(source_code):
     except:
         return 0
 
-
-# TODO: Write your filtering functions here
 
 def tokenize_method(source_code):
     """Tokenize Java source code into space-separated tokens."""
@@ -717,7 +685,7 @@ def evaluate_single_method(
     ngram_counts,
     context_counts,
     vocabulary,
-    alpha=1.0
+    alpha=0.01
 ):
     tokens = tokenized_code.split()
     
@@ -757,7 +725,7 @@ def evaluate_test_file(
     ngram_counts,
     context_counts,
     vocabulary,
-    alpha=1
+    alpha=0.01
 ):
     print(f"\nEvaluating test set: {test_set_name}")
     print(f"Loading methods from: {test_file_path}")
@@ -826,6 +794,18 @@ def write_json(output, path):
         json.dump(output, f, indent=2)
 
 
+# Load pre-saved datasets from disk (avoids re-cloning)
+def load_txt_as_dataset(filename):
+    """Load a tokenized .txt file back into the list-of-dicts format expected by the model functions."""
+    filepath = os.path.join(OUTPUT_DIR, filename)
+    dataset = []
+    with open(filepath, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                dataset.append({'tokenized_code': line})
+    return dataset
+
 
 # Generate output files
 if __name__ == "__main__":
@@ -847,20 +827,16 @@ if __name__ == "__main__":
     print(f"Clone directory: {CLONE_DIR}")
     print(f"Output directory: {OUTPUT_DIR}")
 
+    data_already_collected = all(
+        os.path.exists(os.path.join(OUTPUT_DIR, f))
+        for f in ["train_T1.txt", "train_T2.txt", "train_T3.txt", "val.txt", "test.txt"]
+    )
 
-    #collect_data()
+    if not data_already_collected:
+        collect_data()
+    else:
+        print("Dataset files found, skipping data collection.")
 
-    # Load pre-saved datasets from disk (avoids re-cloning)
-    def load_txt_as_dataset(filename):
-        """Load a tokenized .txt file back into the list-of-dicts format expected by the model functions."""
-        filepath = os.path.join(OUTPUT_DIR, filename)
-        dataset = []
-        with open(filepath, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    dataset.append({'tokenized_code': line})
-        return dataset
 
     T1 = load_txt_as_dataset("train_T1.txt")
     T2 = load_txt_as_dataset("train_T2.txt")
@@ -984,3 +960,15 @@ if __name__ == "__main__":
     )
 
     write_json(provided_results, "results-provided.json")
+
+    if Path('my-test.txt').exists():
+        self_made_results = evaluate_test_file(
+            "my-test.txt",
+            "my-test.txt",
+            best_n,
+            best_ngram_counts,
+            best_context_counts,
+            best_vocab
+        )
+
+        write_json(self_made_results, "results-my-test.txt")
